@@ -144,6 +144,7 @@ def train():
 
     training_data_text = load_data()
     training_data_embedded = embedd_data(training_data_text, glove_array, glove_dict)
+
     input_data, labels, dropout_keep_prob, optimizer, accuracy, loss = \
         imp.define_graph()
 

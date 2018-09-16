@@ -1,4 +1,6 @@
 import tensorflow as tf
+import re
+
 
 BATCH_SIZE = 128
 MAX_WORDS_IN_REVIEW = 100  # Maximum length of a review to consider
@@ -20,19 +22,26 @@ stop_words = set({'ourselves', 'hers', 'between', 'yourself', 'again',
                   'herself', 'has', 'just', 'where', 'too', 'only', 'myself',
                   'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being',
                   'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it',
-                  'how', 'further', 'was', 'here', 'than'})
+                  'how', 'further', 'was', 'here', 'than'}) #124 words
 
 def preprocess(review):
     """
     Apply preprocessing to a single review. You can do anything here that is manipulation
     at a string level, e.g.
-        - removing stop words
         - stripping/adding punctuation
-        - changing case
         - word find/replace
     RETURN: the preprocessed review in string form.
     """
+    review_lower = review.lower()
 
+    # -removing stop words
+    # -changing case
+    review_words = [word for word in re.split("\W+", review_lower) if word not in stop_words]
+    processed_review = ' '.join(review_words)
+    '''
+    Eache processed_review is one string. It is suggested in the forum to split it to list of strings (each word one string)
+    to increase the aquracy.
+    '''
     return processed_review
 
 
@@ -40,7 +49,6 @@ def preprocess(review):
 def define_graph():
     """
     Implement your model here. You will need to define placeholders, for the input and labels,
-    Note that the input is not strings of words, but the strings after the embedding lookup
     has been applied (i.e. arrays of floats).
 
     In all cases this code will be called by an unaltered runner.py. You should read this
@@ -52,5 +60,11 @@ def define_graph():
     You must return, in the following order, the placeholders/tensors for;
     RETURNS: input, labels, optimizer, accuracy and loss
     """
+    input_data = tf.placeholder(tf.float32)
+    labels = tf.placeholder(tf.float32)
+    dropout_keep_prob = tf.placeholder(tf.float32)
+    optimizer = tf.placeholder(tf.float32)
+    Accuracy = tf.placeholder(tf.float32)
+    loss = tf.placeholder(tf.float32)
 
     return input_data, labels, dropout_keep_prob, optimizer, Accuracy, loss
