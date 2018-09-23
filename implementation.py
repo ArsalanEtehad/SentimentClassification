@@ -5,6 +5,8 @@ import re
 BATCH_SIZE = 128
 MAX_WORDS_IN_REVIEW = 100  # Maximum length of a review to consider
 EMBEDDING_SIZE = 50  # Dimensions for each word vector
+CLASS_SIZE = 2 #negative and positive
+LSTM_UNITS = 64
 
 stop_words = set({'ourselves', 'hers', 'between', 'yourself', 'again',
                   'there', 'about', 'once', 'during', 'out', 'very', 'having',
@@ -32,12 +34,14 @@ def preprocess(review):
         - word find/replace
     RETURN: the preprocessed review in string form.
     """
-    review_lower = review.lower()
-
-    # -removing stop words
-    # -changing case
+    # -remove <br />
+    # -make all lowercase
+    # -remove stop words
+    # -remove digits
+    review_lower = review.lower().replace("<br />", " ")
     review_words = [word for word in re.split("\W+", review_lower) if word not in stop_words]
     processed_review = ' '.join(review_words)
+    processed_review = ''.join([i for i in processed_review if not i.isdigit()])
     '''
     Eache processed_review is one string. It is suggested in the forum to split it to list of strings (each word one string)
     to increase the aquracy.
@@ -60,11 +64,58 @@ def define_graph():
     You must return, in the following order, the placeholders/tensors for;
     RETURNS: input, labels, optimizer, accuracy and loss
     """
-    input_data = tf.placeholder(tf.float32)
-    labels = tf.placeholder(tf.float32)
-    dropout_keep_prob = tf.placeholder(tf.float32)
-    optimizer = tf.placeholder(tf.float32)
-    Accuracy = tf.placeholder(tf.float32)
-    loss = tf.placeholder(tf.float32)
 
-    return input_data, labels, dropout_keep_prob, optimizer, Accuracy, loss
+
+    # data = tf.Variable(tf.zeros([BATCH_SIZE, MAX_WORDS_IN_REVIEW, EMBEDDING_SIZE]), dtype=tf.float32)
+    # # data = tf.Variable(tf.zeros([BATCH_SIZE, MAX_WORDS_IN_REVIEW - 2*window_size, EMBEDDING_SIZE]),dtype=tf.float32)
+    #
+    # # data = tf.cast(tf.nn.embedding_lookup(glove_embeddings_arr, input_data), tf.float32)  # Batchsize*maxLength*vectorLength
+    #
+    # conv1 = tf.layers.conv2d(inputs=input_data, filters=1, kernel_size=[1, 3], activation=tf.nn.relu)
+    #
+    # # for word_pos in range(window_size,maxLength-window_size):
+    # #    data[word_pos-window_size] = tf.reduce_mean(tf.slice(raw_data,[1,word_pos-window_size],[-1,window_size*2+1,-1]),1)
+
+    '''
+    #########bi-direction LSTM ############
+    data = tf.transpose(data, [1, 0, 2])
+    data = tf.reshape(data, [-1, vectorLength])
+    data = tf.split(data, maxLength)
+    lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(lstmUnits, forget_bias=1.0)
+    lstm_fw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_fw_cell, output_keep_prob=0.75)
+    lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(lstmUnits, forget_bias=1.0)
+    lstm_bw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_bw_cell, output_keep_prob=0.75)
+    value, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, data, dtype=tf.float32)
+
+    weight = tf.Variable(tf.truncated_normal([2*lstmUnits, numClasses]))
+    bias = tf.Variable(tf.constant(0.1, shape=[numClasses]))
+    prediction = (tf.matmul(value[-1], weight) + bias)
+    ########
+    '''
+    dropout_keep_prob = tf.placeholder_with_default(1.0, shape=(), name="dropout_keep_prob")
+
+    labels = tf.placeholder(tf.int32, [BATCH_SIZE, CLASS_SIZE], name="labels")
+    input_data = tf.placeholder(tf.float32, [BATCH_SIZE, MAX_WORDS_IN_REVIEW, EMBEDDING_SIZE], name="input_data")
+
+    ######## Basic LSTM
+    lstmCell = tf.contrib.rnn.BasicLSTMCell(LSTM_UNITS)  # Define lstmUnit
+    lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell,
+                                             output_keep_prob=dropout_keep_prob)  # Regulization, avoid overfitting
+
+    value, _ = tf.nn.dynamic_rnn(lstmCell, input_data, dtype=tf.float32)
+
+    weight = tf.Variable(tf.truncated_normal([LSTM_UNITS, CLASS_SIZE]))
+
+    bias = tf.Variable(tf.constant(0.1, shape=[CLASS_SIZE]))
+    value = tf.transpose(value, [1, 0, 2])
+    last = tf.gather(value, int(value.get_shape()[0]) - 1)
+    prediction = (tf.matmul(last, weight) + bias)
+    ######
+
+    correctPred = tf.equal(tf.argmax(prediction, 1), tf.argmax(labels, 1))
+    accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32), name="accuracy")
+
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=labels), name="loss")
+    optimizer = tf.train.AdamOptimizer().minimize(loss)
+
+    return input_data, labels, dropout_keep_prob, optimizer, accuracy, loss
