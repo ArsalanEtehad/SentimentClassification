@@ -1,0 +1,6 @@
+model_checkpoint_path: "trained_model.ckpt-30500"
+all_model_checkpoint_paths: "trained_model.ckpt-30100"
+all_model_checkpoint_paths: "trained_model.ckpt-30200"
+all_model_checkpoint_paths: "trained_model.ckpt-30300"
+all_model_checkpoint_paths: "trained_model.ckpt-30400"
+all_model_checkpoint_paths: "trained_model.ckpt-30500"

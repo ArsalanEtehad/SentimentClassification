@@ -65,33 +65,6 @@ def define_graph():
     RETURNS: input, labels, optimizer, accuracy and loss
     """
 
-
-    # data = tf.Variable(tf.zeros([BATCH_SIZE, MAX_WORDS_IN_REVIEW, EMBEDDING_SIZE]), dtype=tf.float32)
-    # # data = tf.Variable(tf.zeros([BATCH_SIZE, MAX_WORDS_IN_REVIEW - 2*window_size, EMBEDDING_SIZE]),dtype=tf.float32)
-    #
-    # # data = tf.cast(tf.nn.embedding_lookup(glove_embeddings_arr, input_data), tf.float32)  # Batchsize*maxLength*vectorLength
-    #
-    # conv1 = tf.layers.conv2d(inputs=input_data, filters=1, kernel_size=[1, 3], activation=tf.nn.relu)
-    #
-    # # for word_pos in range(window_size,maxLength-window_size):
-    # #    data[word_pos-window_size] = tf.reduce_mean(tf.slice(raw_data,[1,word_pos-window_size],[-1,window_size*2+1,-1]),1)
-
-    '''
-    #########bi-direction LSTM ############
-    data = tf.transpose(data, [1, 0, 2])
-    data = tf.reshape(data, [-1, vectorLength])
-    data = tf.split(data, maxLength)
-    lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(lstmUnits, forget_bias=1.0)
-    lstm_fw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_fw_cell, output_keep_prob=0.75)
-    lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(lstmUnits, forget_bias=1.0)
-    lstm_bw_cell = tf.contrib.rnn.DropoutWrapper(cell=lstm_bw_cell, output_keep_prob=0.75)
-    value, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, data, dtype=tf.float32)
-
-    weight = tf.Variable(tf.truncated_normal([2*lstmUnits, numClasses]))
-    bias = tf.Variable(tf.constant(0.1, shape=[numClasses]))
-    prediction = (tf.matmul(value[-1], weight) + bias)
-    ########
-    '''
     dropout_keep_prob = tf.placeholder_with_default(1.0, shape=(), name="dropout_keep_prob")
 
     labels = tf.placeholder(tf.int32, [BATCH_SIZE, CLASS_SIZE], name="labels")
@@ -99,9 +72,7 @@ def define_graph():
 
     ######## Basic LSTM
     lstmCell = tf.contrib.rnn.BasicLSTMCell(LSTM_UNITS)  # Define lstmUnit
-    lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell,
-                                             output_keep_prob=dropout_keep_prob)  # Regulization, avoid overfitting
-
+    lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=dropout_keep_prob)  # Regulization, avoid overfitting
     value, _ = tf.nn.dynamic_rnn(lstmCell, input_data, dtype=tf.float32)
 
     weight = tf.Variable(tf.truncated_normal([LSTM_UNITS, CLASS_SIZE]))
