@@ -46,7 +46,7 @@ def preprocess(review):
     Eache processed_review is one string. It is suggested in the forum to split it to list of strings (each word one string)
     to increase the aquracy.
     '''
-    return processed_review
+    return review_words #trying to send back as a list of strings
 
 
 
@@ -72,7 +72,7 @@ def define_graph():
 
     ######## Basic LSTM
     lstmCell = tf.contrib.rnn.BasicLSTMCell(LSTM_UNITS)  # Define lstmUnit
-    lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=dropout_keep_prob)  # Regulization, avoid overfitting
+    lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=dropout_keep_prob)
     value, _ = tf.nn.dynamic_rnn(lstmCell, input_data, dtype=tf.float32)
 
     weight = tf.Variable(tf.truncated_normal([LSTM_UNITS, CLASS_SIZE]))
